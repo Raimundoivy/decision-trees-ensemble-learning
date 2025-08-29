@@ -1,97 +1,137 @@
 import pandas as pd
 import joblib
-import logging
+
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction import DictVectorizer
-from xgboost import XGBClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import GridSearchCV
+from sklearn.preprocessing import PolynomialFeatures # Import PolynomialFeatures
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Parameters
+output_file = 'model.joblib'
+validation_split = 0.2
 
 
-def train_model(data_path='CreditScoring.csv', model_output_path='model.joblib'):
-    """Trains and saves a model.
+# Data preparation
+df = pd.read_csv('CreditScoring.csv')
+df.columns = df.columns.str.lower()
 
-    Args:
-        data_path (str): Path to the training data.
-        model_output_path (str): Path to save the trained model.
-    """
-    logging.info("Starting model training...")
+# Advanced Feature Engineering
+def feature_engineering(df):
+    # Ratio features
+    df['debt_to_income_ratio'] = df['debt'] / (df['income'] + 1e-6)
+    df['assets_to_debt_ratio'] = df['assets'] / (df['debt'] + 1e-6)
+    df['loan_amount_to_income_ratio'] = df['amount'] / (df['income'] + 1e-6)
+    df['seniority_to_age_ratio'] = df['seniority'] / (df['age'] + 1e-6)
+    df['expenses_to_income_ratio'] = df['expenses'] / (df['income'] + 1e-6)
 
-    # Load data
-    logging.info(f"Loading data from {data_path}...")
-    df = pd.read_csv(data_path)
+    # Polynomial features
+    numerical_features = [
+        'seniority', 'time', 'age', 'expenses', 'income',
+        'assets', 'debt', 'amount', 'price',
+        'debt_to_income_ratio', 'assets_to_debt_ratio',
+        'loan_amount_to_income_ratio', 'seniority_to_age_ratio',
+        'expenses_to_income_ratio'
+    ]
+    
+    # Create polynomial features for numerical columns
+    poly = PolynomialFeatures(degree=2, include_bias=False)
+    poly_features = poly.fit_transform(df[numerical_features])
+    
+    # Get feature names for polynomial features
+    poly_feature_names = poly.get_feature_names_out(numerical_features)
+    
+    # Create a DataFrame for polynomial features
+    df_poly = pd.DataFrame(poly_features, columns=poly_feature_names, index=df.index)
+    
+    # Let's try this:
+    df_with_ratio_features = df.copy() # Start with a copy to avoid modifying the original df passed in
+    df_with_ratio_features['debt_to_income_ratio'] = df_with_ratio_features['debt'] / (df_with_ratio_features['income'] + 1e-6)
+    df_with_ratio_features['assets_to_debt_ratio'] = df_with_ratio_features['assets'] / (df_with_ratio_features['debt'] + 1e-6)
+    df_with_ratio_features['loan_amount_to_income_ratio'] = df_with_ratio_features['amount'] / (df_with_ratio_features['income'] + 1e-6)
+    df_with_ratio_features['seniority_to_age_ratio'] = df_with_ratio_features['seniority'] / (df_with_ratio_features['age'] + 1e-6)
+    df_with_ratio_features['expenses_to_income_ratio'] = df_with_ratio_features['expenses'] / (df_with_ratio_features['income'] + 1e-6)
 
-    # Preprocess data
-    df.columns = df.columns.str.lower()
-    status_values = {
-        1: 'ok',
-        2: 'default',
-        0: 'unk'
-    }
-    df.status = df.status.map(status_values)
+    # List of all numerical features (original + ratio)
+    all_numerical_features = [
+        'seniority', 'time', 'age', 'expenses', 'income',
+        'assets', 'debt', 'amount', 'price',
+        'debt_to_income_ratio', 'assets_to_debt_ratio',
+        'loan_amount_to_income_ratio', 'seniority_to_age_ratio',
+        'expenses_to_income_ratio'
+    ]
 
-    home_values = {
-        1: 'rent',
-        2: 'owner',
-        3: 'private',
-        4: 'ignore',
-        5: 'parents',
-        6: 'other',
-        0: 'unk'
-    }
-    df.home = df.home.map(home_values)
+    # List of original numerical features
+    original_numerical_features = [
+        'seniority', 'time', 'age', 'expenses', 'income',
+        'assets', 'debt', 'amount', 'price'
+    ]
 
-    marital_values = {
-        1: 'single',
-        2: 'married',
-        3: 'widow',
-        4: 'separated',
-        5: 'divorced',
-        0: 'unk'
-    }
-    df.marital = df.marital.map(marital_values)
+    # Create polynomial features
+    poly = PolynomialFeatures(degree=2, include_bias=False)
+    poly_features_array = poly.fit_transform(df_with_ratio_features[all_numerical_features])
+    poly_feature_names = poly.get_feature_names_out(all_numerical_features)
+    df_poly = pd.DataFrame(poly_features_array, columns=poly_feature_names, index=df_with_ratio_features.index)
 
-    records_values = {
-        1: 'no',
-        2: 'yes',
-        0: 'unk'
-    }
-    df.records = df.records.map(records_values)
+    # Drop the original numerical features (degree 1 terms) from df_poly
+    columns_to_drop_from_df_poly = [col for col in all_numerical_features if col in df_poly.columns]
+    df_poly_only_new_terms = df_poly.drop(columns=columns_to_drop_from_df_poly)
 
-    job_values = {
-        1: 'fixed',
-        2: 'partime',
-        3: 'freelance',
-        4: 'others',
-        0: 'unk'
-    }
-    df.job = df.job.map(job_values)
+    # Now, we need to combine:
+    # 1. Original categorical features from df_with_ratio_features
+    # 2. Ratio features from df_with_ratio_features (these are already in df_with_ratio_features)
+    # 3. New polynomial features from df_poly_only_new_terms
 
-    for col in ['income', 'assets', 'debt']:
-        df[col] = df[col].replace(to_replace=99999999, value=0)
+    # Get all columns that are NOT original numerical features
+    columns_to_keep = [col for col in df_with_ratio_features.columns if col not in original_numerical_features]
+    df_final = df_with_ratio_features[columns_to_keep]
 
-    df_train, _ = train_test_split(df, test_size=0.2, random_state=1)
-    df_train = df_train.reset_index(drop=True)
-    y_train = (df_train.status == 'default').astype('int').values
+    # Concatenate with the new polynomial terms
+    df_engineered = pd.concat([df_final, df_poly_only_new_terms], axis=1)
 
-    del df_train['status']
+    return df_engineered
 
-    # Train the DictVectorizer and transform the data
-    logging.info("Training DictVectorizer...")
-    train_dicts = df_train.to_dict(orient='records')
-    dv = DictVectorizer(sparse=False)
-    X_train = dv.fit_transform(train_dicts)
+    return df_engineered
 
-    # Train the XGBoost Model
-    logging.info("Training XGBoost model...")
-    model = XGBClassifier(use_label_encoder=False, eval_metric='logloss')
-    model.fit(X_train, y_train)
+df = feature_engineering(df)
 
-    # Save the vectorizer and model
-    logging.info(f"Saving model and vectorizer to {model_output_path}...")
-    joblib.dump((dv, model), model_output_path)
-    logging.info("Model training finished.")
 
-if __name__ == "__main__":
-    train_model()
+df_train, df_val = train_test_split(df, test_size=validation_split, random_state=42)
+
+y_train = (df_train.status == 2).astype(int)
+y_val = (df_val.status == 2).astype(int)
+
+del df_train['status']
+del df_val['status']
+
+dict_train = df_train.to_dict(orient='records')
+dict_val = df_val.to_dict(orient='records')
+
+
+# Training
+dv = DictVectorizer(sparse=False)
+X_train = dv.fit_transform(dict_train)
+X_val = dv.transform(dict_val)
+
+# Hyperparameter tuning with GridSearchCV
+param_grid = {
+    'max_depth': [5, 10, 15, 20, None],
+    'min_samples_leaf': [1, 5, 10, 15],
+    'criterion': ['gini', 'entropy']
+}
+
+dt = DecisionTreeClassifier()
+grid_search = GridSearchCV(estimator=dt, param_grid=param_grid, cv=5, n_jobs=-1, verbose=2)
+grid_search.fit(X_train, y_train)
+
+# Best model
+dt = grid_search.best_estimator_
+
+print(f"Best parameters found: {grid_search.best_params_}")
+
+
+# Saving the model
+joblib.dump((dv, dt), output_file)
+
+print(f'The model is saved to {output_file}')
