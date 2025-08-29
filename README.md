@@ -1,6 +1,5 @@
 # Credit Risk Prediction API
 
-[![GitHub Actions CI](https://github.com/your-username/your-repository/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/your-repository/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg?logo=docker)](https://www.docker.com/)
@@ -219,20 +218,6 @@ The original deployment instructions are provided below.
     ```bash
     eb terminate credit-risk-env
     ```
-
-## Contributing
-
-Contributions are welcome\! Please feel free to submit a pull request or open an issue if you have suggestions for improvement.
-
-1.  Fork the Project.
-2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`).
-3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`).
-4.  Push to the Branch (`git push origin feature/AmazingFeature`).
-5.  Open a Pull Request.
-
-## License
-
-This project is distributed under the MIT License.
 
 ```
 ```
