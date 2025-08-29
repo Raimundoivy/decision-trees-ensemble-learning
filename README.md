@@ -1,4 +1,3 @@
-````markdown
 # Credit Risk Prediction API
 
 [![GitHub Actions CI](https://github.com/your-username/your-repository/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/your-repository/actions)
