@@ -136,7 +136,6 @@ curl -X POST http://localhost:9696/predict \
          }'
 ````
 
-\</details\>
 
 **Example Success Response:**
 
