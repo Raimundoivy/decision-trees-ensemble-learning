@@ -149,7 +149,7 @@ curl -X POST http://localhost:9696/predict \
 
 ## 📁 Project Structure
 
-\<summary\>Click to expand project file descriptions\</summary\>
+<summary>Click to expand project file descriptions\<summary>
 
   - `predict.py`: The Flask application that serves the model.
   - `train.py`: Script to train the model from source data.
