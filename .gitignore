@@ -133,3 +133,6 @@ model.joblib
 
 # Data files
 CreditScoring.csv
+
+# Generated files
+requirements.txt
