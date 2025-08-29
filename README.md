@@ -113,7 +113,6 @@ Interact with the service by sending `POST` requests to the `/predict` endpoint.
 
 You can use the provided `predict-test.py` script or a tool like `curl`.
 
-<summary>View curl command</summary>
 
 ```bash
 curl -X POST http://localhost:9696/predict \
@@ -148,8 +147,6 @@ curl -X POST http://localhost:9696/predict \
 -----
 
 ## 📁 Project Structure
-
-<summary>Click to expand project file descriptions\<summary>
 
   - `predict.py`: The Flask application that serves the model.
   - `train.py`: Script to train the model from source data.
