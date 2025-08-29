@@ -115,7 +115,7 @@ curl -X POST http://localhost:9696/predict \
            "age": 30,
            "marital": "married",
            "records": "no",
-           "job": "freance",
+           "job": "freelance",
            "expenses": 73,
            "income": 129.0,
            "assets": 0.0,
@@ -171,52 +171,6 @@ The model can be retrained using the `train.py` script. The script expects the d
 ## Model Development Notebook
 
 The Jupyter notebook `decision_trees_ensemble_learning.ipynb` contains the original data exploration, feature engineering, and model training process. For a deeper understanding of how the model was developed and evaluated, please refer to this notebook.
-
-## Deployment to AWS Elastic Beanstalk
-
-The original deployment instructions are provided below.
-
-### Prerequisites
-
-  - An AWS Account.
-  - [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) installed and configured.
-  - [EB CLI](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/eb-cli3-install.html) installed.
-
-### Deployment Steps
-
-1.  **Initialize the Elastic Beanstalk Application:**
-    Navigate to the project's root directory and run:
-
-    ```bash
-    eb init -p "Docker" --region us-east-1 credit-risk-app
-    ```
-
-    This command initializes a new EB application named `credit-risk-app` configured for the Docker platform.
-
-2.  **Create the Environment:**
-    Create a new environment for the application.
-
-    ```bash
-    eb create credit-risk-env
-    ```
-
-    This command deploys your application. The process may take several minutes.
-
-3.  **Verify the Deployment:**
-    Once complete, open the application in your browser:
-
-    ```bash
-    eb open
-    ```
-
-    You should see the welcome message: `{"message":"Welcome to the Credit Risk Prediction API!"}`.
-
-4.  **Clean Up:**
-    To avoid incurring charges, terminate your environment when you are done.
-
-    ```bash
-    eb terminate credit-risk-env
-    ```
 
 ```
 ```
