@@ -1,5 +1,6 @@
 import pytest
 from predict import app as flask_app
+import subprocess
 
 # The sample applicant data from predict-test.py
 APPLICANT_DATA = {
@@ -25,6 +26,12 @@ def client():
     flask_app.config['TESTING'] = True
     with flask_app.test_client() as client:
         yield client
+
+def test_root_endpoint(client):
+    """Test the root endpoint."""
+    response = client.get('/')
+    assert response.status_code == 200
+    assert response.json == {"message": "Welcome to the Credit Risk Prediction API!"}
 
 def test_ping_endpoint(client):
     """Test the /ping health check endpoint."""
@@ -52,3 +59,8 @@ def test_predict_endpoint_invalid_data(client):
     result = response.json
     assert 'error' in result
     assert result['error'] == 'Invalid input'
+
+def test_predict_test_script():
+    """Test that the predict-test.py script runs without errors."""
+    result = subprocess.run(['python', 'predict-test.py'], capture_output=True, text=True)
+    assert result.returncode == 0, f"predict-test.py failed with error: {result.stderr}"

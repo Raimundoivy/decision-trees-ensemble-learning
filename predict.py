@@ -18,6 +18,7 @@ dv, model = joblib.load(model_file)
 logging.info("Model loaded successfully.")
 
 app = Flask('credit-risk')
+app.title = "Credit Risk Prediction API"
 
 # Define the data model for input validation using Pydantic
 class LoanApplication(BaseModel):
@@ -35,6 +36,11 @@ class LoanApplication(BaseModel):
     amount: int
     price: int
 
+@app.route('/', methods=['GET'])
+def index():
+    """Root endpoint with a welcome message."""
+    return jsonify({"message": "Welcome to the Credit Risk Prediction API!"})
+
 
 @app.route('/ping', methods=['GET'])
 def ping():
@@ -43,6 +49,7 @@ def ping():
 
 @app.route('/predict', methods=['POST'])
 def predict():
+    """Predict credit risk based on loan application data."""
     try:
         # Get and validate the loan application data from the request's JSON body
         application_data = request.get_json()

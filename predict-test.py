@@ -1,7 +1,8 @@
+import os
 import requests
 
-# The URL of your local server's predict endpoint
-url = 'http://localhost:9696/predict'
+# Get the URL from the environment variable or use a default
+url = os.getenv('PREDICTION_URL', 'http://localhost:9696/predict')
 
 # A sample loan application
 applicant = {
@@ -20,10 +21,15 @@ applicant = {
     "price": 846
 }
 
-# Send the POST request and get the response
-response = requests.post(url, json=applicant)
-result = response.json()
+try:
+    # Send the POST request and get the response
+    response = requests.post(url, json=applicant)
+    response.raise_for_status()  # Raise an exception for bad status codes
+    result = response.json()
 
-# Display the results
-print("Credit Risk Prediction:")
-print(result)
+    # Display the results
+    print("Credit Risk Prediction:")
+    print(result)
+
+except requests.exceptions.RequestException as e:
+    print(f"Error connecting to the prediction service: {e}")

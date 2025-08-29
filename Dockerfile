@@ -15,10 +15,14 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 # This is the lean, final image that will run in production.
 FROM python:3.12-slim
 
-WORKDIR /app
+# Create a non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
+WORKDIR /home/appuser/app
 
 # Copy installed packages from the builder stage
-COPY --from=builder /root/.local /root/.local
+COPY --from=builder /root/.local /home/appuser/.local
 
 # Copy the application code and the serialized model
 COPY ["predict.py", "model.joblib", "./"]
@@ -27,7 +31,10 @@ COPY ["predict.py", "model.joblib", "./"]
 EXPOSE 9696
 
 # Make Python aware of the installed packages
-ENV PATH=/root/.local/bin:$PATH
+ENV PATH=/home/appuser/.local/bin:$PATH
+
+# Healthcheck to ensure the application is running
+HEALTHCHECK CMD curl --fail http://localhost:9696/ || exit 1
 
 # Define the command to run the application using Gunicorn for production
 CMD ["gunicorn", "--bind=0.0.0.0:9696", "predict:app"]

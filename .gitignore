@@ -120,3 +120,16 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# IDE settings
+.idea/
+
+# Notebooks
+decision_trees_ensemble_learning.ipynb
+
+# Model files
+model.bin
+model.joblib
+
+# Data files
+CreditScoring.csv
