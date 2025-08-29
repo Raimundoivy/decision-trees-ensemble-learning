@@ -20,11 +20,6 @@ A containerized Flask API that predicts customer credit default risk using a pre
 -   🔄 **Reproducible Training:** Includes a `train.py` script to retrain the XGBoost model from the source `CreditScoping.csv` dataset.
 -   🧪 **Comprehensive Testing:** Features a full `pytest` suite for unit testing the API and a CI pipeline powered by GitHub Actions to automate testing.
 
-## Visual Demo
-
-[INSERT-DEMO-GIF-HERE]
-
-*A brief animation demonstrating a `curl` request to the API and the corresponding JSON response provides immediate clarity on the project's core functionality.*
 
 ## Technology Stack
 
