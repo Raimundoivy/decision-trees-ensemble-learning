@@ -173,4 +173,3 @@ The model can be retrained using the `train.py` script. The script expects the d
 The Jupyter notebook `decision_trees_ensemble_learning.ipynb` contains the original data exploration, feature engineering, and model training process. For a deeper understanding of how the model was developed and evaluated, please refer to this notebook.
 
 ```
-```
