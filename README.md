@@ -113,7 +113,6 @@ Interact with the service by sending `POST` requests to the `/predict` endpoint.
 
 You can use the provided `predict-test.py` script or a tool like `curl`.
 
-<details>
 <summary>View curl command</summary>
 
 ```bash
@@ -150,7 +149,6 @@ curl -X POST http://localhost:9696/predict \
 
 ## 📁 Project Structure
 
-\<details\>
 \<summary\>Click to expand project file descriptions\</summary\>
 
   - `predict.py`: The Flask application that serves the model.
@@ -161,7 +159,6 @@ curl -X POST http://localhost:9696/predict \
   - `.github/workflows/ci.yml`: The GitHub Actions CI configuration.
   - `decision_trees_ensemble_learning.ipynb`: Jupyter notebook with original model development and analysis.
 
-\</details\>
 
 -----
 
