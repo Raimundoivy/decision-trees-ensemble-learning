@@ -1,8 +1,9 @@
 import pandas as pd
 import pytest
 from unittest.mock import patch, MagicMock
-from train import feature_engineering, DictVectorizer, DecisionTreeClassifier, GridSearchCV, joblib
+from train import feature_engineering
 import numpy as np
+
 
 # Sample data for testing feature_engineering
 @pytest.fixture
@@ -25,6 +26,7 @@ def sample_dataframe():
     }
     return pd.DataFrame(data)
 
+
 def test_feature_engineering_ratio_features(sample_dataframe):
     df_engineered = feature_engineering(sample_dataframe.copy())
 
@@ -38,6 +40,7 @@ def test_feature_engineering_ratio_features(sample_dataframe):
     # Check some calculated values (using a small epsilon for float comparison)
     assert abs(df_engineered.loc[0, 'debt_to_income_ratio'] - (100 / 1000)) < 1e-6
     assert abs(df_engineered.loc[1, 'assets_to_debt_ratio'] - (5000 / 200)) < 1e-6
+
 
 def test_feature_engineering_polynomial_features(sample_dataframe):
     df_engineered = feature_engineering(sample_dataframe.copy())
@@ -59,7 +62,8 @@ def test_feature_engineering_polynomial_features(sample_dataframe):
     for feature in ratio_features:
         assert feature in df_engineered.columns
 
-    # Check for presence of some expected polynomial features (e.g., 'seniority^2', 'seniority time')
+    # Check for presence of some expected polynomial features
+    # (e.g., 'seniority^2', 'seniority time')
     # This is a basic check, more robust checks might involve specific feature names
     poly_feature_present = False
     for col in df_engineered.columns:
@@ -70,13 +74,14 @@ def test_feature_engineering_polynomial_features(sample_dataframe):
 
     poly_feature_present = False
     for col in df_engineered.columns:
-        if 'seniority' in col and 'time' in col and ' ' in col: # Check for interaction term
+        if 'seniority' in col and 'time' in col and ' ' in col:  # Check for interaction term
             poly_feature_present = True
             break
     assert poly_feature_present
 
     # Ensure the number of rows remains the same
     assert len(df_engineered) == len(sample_dataframe)
+
 
 # Mocking the entire training process for an integration-like test
 @patch('train.pd.read_csv')
@@ -85,6 +90,12 @@ def test_feature_engineering_polynomial_features(sample_dataframe):
 @patch('train.DecisionTreeClassifier')
 @patch('train.GridSearchCV')
 def test_full_training_pipeline(mock_grid_search, mock_dt_classifier, mock_dv, mock_joblib_dump, mock_read_csv, sample_dataframe):
+    # These imports are only needed for the mocked test, so they are placed here.
+    from sklearn.feature_extraction import DictVectorizer
+    from sklearn.tree import DecisionTreeClassifier
+    from sklearn.model_selection import GridSearchCV
+    import joblib
+
     # Configure mock for pd.read_csv to return our sample_dataframe
     mock_read_csv.return_value = sample_dataframe
 
@@ -101,9 +112,9 @@ def test_full_training_pipeline(mock_grid_search, mock_dt_classifier, mock_dv, m
     # Mock GridSearchCV
     mock_grid_search_instance = MagicMock()
     mock_grid_search.return_value = mock_grid_search_instance
-    mock_grid_search_instance.best_estimator_ = mock_dt_instance # GridSearchCV returns the best estimator
+    mock_grid_search_instance.best_estimator_ = mock_dt_instance  # GridSearchCV returns the best estimator
     mock_grid_search_instance.best_params_ = {'max_depth': 10, 'min_samples_leaf': 5}
-    mock_grid_search_instance.fit.return_value = None # fit doesn't need to return anything specific for this test
+    mock_grid_search_instance.fit.return_value = None  # fit doesn't need to return anything specific for this test
 
     # Call the main function of train.py
     from train import main
