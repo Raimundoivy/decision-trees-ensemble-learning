@@ -6,7 +6,7 @@ from datetime import datetime
 
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction import DictVectorizer
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import PolynomialFeatures
 
@@ -112,27 +112,27 @@ def main():
     X_train = dv.fit_transform(dict_train)
     X_val = dv.transform(dict_val)
 
-    # Hyperparameter tuning with GridSearchCV
+    # Hyperparameter tuning with GridSearchCV for RandomForest
     param_grid = {
-        "max_depth": [5, 10, 15, 20, None],
-        "min_samples_leaf": [1, 5, 10, 15],
-        "criterion": ["gini", "entropy"],
+        'n_estimators': [150, 200, 250],
+        'max_depth': [10, 15],
+        'min_samples_leaf': [3, 5]
     }
 
-    dt = DecisionTreeClassifier()
+    rf = RandomForestClassifier(random_state=1, n_jobs=-1)
     grid_search = GridSearchCV(
-        estimator=dt, param_grid=param_grid, cv=5, n_jobs=-1, verbose=2
+        estimator=rf, param_grid=param_grid, cv=5, n_jobs=-1, verbose=2
     )
     grid_search.fit(X_train, y_train)
 
     # Best model
-    dt = grid_search.best_estimator_
+    model = grid_search.best_estimator_
 
     print(f"Best parameters found: {grid_search.best_params_}")
     print(f"Best cross-validation score: {grid_search.best_score_:.4f}")
 
     # Saving the model
-    joblib.dump((dv, dt), output_file)
+    joblib.dump((dv, model), output_file)
     print(f"The model is saved to {output_file}")
 
     # Save metrics
