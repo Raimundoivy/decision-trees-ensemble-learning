@@ -136,3 +136,11 @@ CreditScoring.csv
 
 # Generated files
 requirements.txt
+
+# SSH keys (avoid committing secrets)
+id_*
+*.pem
+*.pub
+.ssh/
+idk
+idk.pub
