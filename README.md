@@ -94,3 +94,37 @@ pre-commit run --all-files
 ```
 
 These hooks run Black, isort, and Flake8 before each commit.
+
+
+## Troubleshooting: Not seeing updates on GitHub?
+
+If your changes aren’t appearing on GitHub, check these steps:
+
+1) Commit your changes locally
+- git status
+- git add -A
+- git commit -m "Your message"
+
+2) Verify the current branch and push it
+- git branch --show-current  # shows the active branch (e.g., main or master)
+- git push -u origin HEAD    # pushes the current branch and sets upstream
+
+3) Check your remote
+- git remote -v
+If none or incorrect, set it:
+- git remote add origin git@github.com:<your-username>/<your-repo>.git  # SSH
+  or
+- git remote add origin https://github.com/<your-username>/<your-repo>.git  # HTTPS
+
+4) Using SSH? Ensure your key is set up
+- Generate a key (non-interactive): ./scripts/generate_ssh_key.sh idk
+- Copy idk.pub content and add it at GitHub → Settings → SSH and GPG keys → New SSH key
+- Test: ssh -T git@github.com (you should see a success message)
+
+5) GitHub Actions not running?
+- Workflow files must be in .github/workflows/*.yml (fixed in this repo)
+- Push to the default branch (main or master); then check the Actions tab
+
+6) Still not seeing updates?
+- Confirm you’re looking at the same branch on GitHub as the one you pushed
+- Refresh the page; check commit history and branch selector on GitHub
