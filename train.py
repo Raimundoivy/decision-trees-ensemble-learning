@@ -1,5 +1,7 @@
 import pandas as pd
 import joblib
+import json
+from datetime import datetime
 
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction import DictVectorizer
@@ -10,6 +12,7 @@ from sklearn.preprocessing import PolynomialFeatures  # Import PolynomialFeature
 
 # Parameters
 output_file = "model.joblib"
+metrics_file = "training_metrics.json"
 validation_split = 0.2
 
 
@@ -143,12 +146,23 @@ def main():
     dt = grid_search.best_estimator_
 
     print(f"Best parameters found: {grid_search.best_params_}")
+    print(f"Best cross-validation score: {grid_search.best_score_:.4f}")
 
     # Saving the model
     joblib.dump((dv, dt), output_file)
-
     print(f"The model is saved to {output_file}")
+
+    # Save metrics
+    metrics = {
+        "best_params": grid_search.best_params_,
+        "best_score": grid_search.best_score_,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+    with open(metrics_file, "w") as f:
+        json.dump(metrics, f, indent=2)
+    print(f"Metrics saved to {metrics_file}")
 
 
 if __name__ == "__main__":
     main()
+

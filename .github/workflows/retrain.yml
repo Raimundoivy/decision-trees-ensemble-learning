@@ -30,3 +30,9 @@ jobs:
         with:
           name: model-joblib
           path: model.joblib
+
+      - name: Upload metrics artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-metrics
+          path: training_metrics.json
