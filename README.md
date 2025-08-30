@@ -1,130 +1,152 @@
-# Simple Deployment with AWS Elastic Beanstalk
+# Credit Risk Prediction API
+
+**A machine learning project to predict credit default probability, served via a REST API.**
+
+This project trains a Decision Tree classifier on a credit scoring dataset to predict the likelihood of a loan default. The trained model is exposed through a Flask-based REST API, which is containerized using Docker. The entire workflow is supported by a robust CI/CD pipeline using GitHub Actions for testing, building, and deploying the application to Google Cloud Run.
+
+## Features
+
+- **Automated Model Training**: A script (`train.py`) for training the model, including feature engineering and hyperparameter tuning.
+- **Prediction API**: A Flask API (`predict.py`) to serve predictions.
+- **API Documentation**: Interactive API documentation available via Swagger UI.
+- **Containerization**: A `Dockerfile` to package the application for consistent deployment.
+- **CI/CD Pipeline**: GitHub Actions (`ci.yml`) for automated testing, linting, building, and deployment.
+- **Scheduled Retraining**: A GitHub Actions workflow (`retrain.yml`) to automatically retrain the model weekly.
+- **Dependency Management**: Uses `pipenv` for managing Python dependencies.
+- **Code Quality**: Pre-commit hooks for automated code formatting and linting.
+
+## API Documentation
+
+The API provides endpoints for health checks, versioning, and predictions.
+
+- **Interactive Docs (Swagger UI)**: Once the API is running, visit `http://localhost:9696/docs`.
+- **OpenAPI Spec**: The raw OpenAPI 3.0 specification is available at `http://localhost:9696/openapi.json`.
+
+### Prediction Endpoint
+
+- **URL**: `/predict`
+- **Method**: `POST`
+- **Description**: Predicts the probability of credit default for a given loan application. See the `LoanApplication` schema in the `openapi.json` file for the full structure.
+- **Example `curl` Request**:
+  ```bash
+  curl -X POST http://localhost:9696/predict \
+    -H "Content-Type: application/json" \
+    -d \
+    '{
+      "seniority": 3, "home": "owner", "time": 60, "age": 30, "marital": "married",
+      "records": "no", "job": "freelance", "expenses": 73, "income": 129,
+      "assets": 0, "debt": 0, "amount": 800, "price": 1000
+    }'
+  ```
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.13
+- `pipenv`
+- Docker
+
+### Installation
+
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/Raimundoivy/decision-trees-ensemble-learning.git
+    cd decision-trees-ensemble-learning
+    ```
+
+2.  **Install dependencies:**
+    ```bash
+    pipenv install --dev
+    ```
+
+3.  **Set up pre-commit hooks (optional but recommended):**
+    ```bash
+    pipenv run pre-commit install
+    ```
+
+## Usage
+
+### 1. Train the Model
+
+Run the training script. This will generate the `model.joblib` file.
+*Note: This requires the `CreditScoring.csv` dataset in the root directory.*
+
+```bash
+pipenv run python train.py
+```
+
+### 2. Run the API Locally
+
+Start the Flask application:
+
+```bash
+pipenv run python predict.py
+```
+
+The API will be available at `http://localhost:9696`.
+
+### 3. Run with Docker
+
+Build and run the Docker container:
+
+```bash
+docker build -t credit-risk-api .
+docker run -p 9696:9696 credit-risk-api
+```
+
+## Testing
+
+Run the test suite using `pytest`. The tests are separated into unit and integration tests.
+
+```bash
+# Run all tests
+pipenv run pytest
+
+# Run only unit tests
+pipenv run pytest -m "not integration"
+```
+
+## CI/CD Pipeline
+
+The project uses GitHub Actions for its CI/CD pipeline, defined in `.github/workflows/ci.yml`. The pipeline consists of the following jobs:
+
+1.  **`test`**: Installs dependencies, runs linters (`black`, `flake8`), and executes unit tests on every push and pull request to `main`.
+2.  **`build-and-push`**: Builds and pushes a Docker image to GitHub Container Registry (ghcr.io) on pushes to `main`.
+3.  **`integration`**: Runs integration tests by spinning up the newly built Docker container and sending test predictions to it.
+4.  **`deploy`**: Deploys the container to Google Cloud Run environments (dev, staging, prod) after all previous jobs succeed.
+
+Additionally, the `.github/workflows/retrain.yml` workflow automatically retrains the model every Monday at 03:00 UTC.
+
+## Deployment (AWS Elastic Beanstalk)
 
 This guide provides instructions for a simple deployment of the Credit Risk Prediction API to AWS Elastic Beanstalk.
 
-## Prerequisites
+### Prerequisites
 
-Before you begin, ensure you have the following:
+- AWS Account & AWS CLI
+- Elastic Beanstalk CLI (EB CLI)
 
-- **AWS Account:** You'll need an AWS account to use Elastic Beanstalk.
-- **AWS CLI:** The AWS Command Line Interface (CLI) must be installed and configured on your local machine. For instructions, see the [AWS CLI documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html).
-- **Elastic Beanstalk CLI (EB CLI):** The EB CLI is a command-line interface for AWS Elastic Beanstalk that provides interactive commands that simplify creating, updating, and monitoring environments from a local repository. For installation instructions, see the [EB CLI documentation](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/eb-cli3-install.html).
+### Deployment Steps
 
-## Deployment Steps
+1.  **Initialize the Elastic Beanstalk Application:**
+    ```bash
+    eb init -p "Docker" --region us-east-1 credit-risk-app
+    ```
 
-### 1. Initialize the Elastic Beanstalk Application
+2.  **Create the Environment:**
+    ```bash
+    eb create credit-risk-env
+    ```
 
-Navigate to your project's root directory and run the following command to initialize your Elastic Beanstalk application:
+3.  **Verify and Test:**
+    ```bash
+    eb open
+    export PREDICTION_URL=$(eb status --verbose | grep CNAME | awk \'{print $2}\')
+    python predict-test.py
+    ```
 
-```bash
-eb init -p "Docker" --region us-east-1 credit-risk-app
-```
-
-This command initializes a new Elastic Beanstalk application named `credit-risk-app` in the `us-east-1` region and configures it to use the Docker platform.
-
-### 2. Create the Elastic Beanstalk Environment
-
-Next, create a new environment for your application with the following command:
-
-```bash
-eb create credit-risk-env
-```
-
-This command creates a new environment named `credit-risk-env` and automatically deploys your application to it. The deployment process may take a few minutes.
-
-### 3. Verify the Deployment
-
-Once the deployment is complete, you can open your application in a web browser with the following command:
-
-```bash
-eb open
-```
-
-This command opens your application's URL in your default web browser. You should see the message: `{"message":"Welcome to the Credit Risk Prediction API!"}`.
-
-### 4. Test the Prediction Endpoint
-
-To test the prediction endpoint, you can use the `predict-test.py` script. First, set the `PREDICTION_URL` environment variable to your application's URL, which you can get from the output of the `eb status` command. Then, run the script:
-
-```bash
-export PREDICTION_URL=$(eb status --verbose | grep CNAME | awk '{print $2}')
-python predict-test.py
-```
-
-### 5. Clean Up
-
-To avoid incurring unnecessary charges, you can terminate your environment with the following command:
-
-```bash
-eb terminate credit-risk-env
-```
-
-This command terminates the environment and all associated resources.
-
-
-## Non-interactive SSH key generation
-
-If you encounter the interactive prompt "Enter file in which to save the key" when generating SSH keys (e.g., in CI or automation), use the helper script to generate a key pair without prompts:
-
-Usage:
-- ./scripts/generate_ssh_key.sh idk
-
-This will create idk and idk.pub using ssh-keygen with a blank passphrase and a specified output file, avoiding interactive prompts. If the files already exist, the script is a no-op.
-
-
-## Roadmap and Next Steps
-
-For a concise guide on what to do now, including developer quickstart, local and Docker run instructions, CI/CD and deployment, model lifecycle, and a prioritized checklist, see the project roadmap: [ROADMAP.md](./ROADMAP.md)
-
-
-## API Documentation (/docs)
-
-- After starting the API (locally or in Docker), open http://localhost:9696/docs for interactive Swagger UI.
-- The raw OpenAPI spec is available at http://localhost:9696/openapi.json.
-
-## Pre-commit Hooks
-
-To keep code quality consistent locally, install and enable pre-commit:
-
-```bash
-pip install pre-commit
-pre-commit install
-# Run against all files once
-pre-commit run --all-files
-```
-
-These hooks run Black, isort, and Flake8 before each commit.
-
-
-## Troubleshooting: Not seeing updates on GitHub?
-
-If your changes aren’t appearing on GitHub, check these steps:
-
-1) Commit your changes locally
-- git status
-- git add -A
-- git commit -m "Your message"
-
-2) Verify the current branch and push it
-- git branch --show-current  # shows the active branch (e.g., main or master)
-- git push -u origin HEAD    # pushes the current branch and sets upstream
-
-3) Check your remote
-- git remote -v
-If none or incorrect, set it:
-- git remote add origin git@github.com:<your-username>/<your-repo>.git  # SSH
-  or
-- git remote add origin https://github.com/<your-username>/<your-repo>.git  # HTTPS
-
-4) Using SSH? Ensure your key is set up
-- Generate a key (non-interactive): ./scripts/generate_ssh_key.sh idk
-- Copy idk.pub content and add it at GitHub → Settings → SSH and GPG keys → New SSH key
-- Test: ssh -T git@github.com (you should see a success message)
-
-5) GitHub Actions not running?
-- Workflow files must be in .github/workflows/*.yml (fixed in this repo)
-- Push to the default branch (main or master); then check the Actions tab
-
-6) Still not seeing updates?
-- Confirm you’re looking at the same branch on GitHub as the one you pushed
-- Refresh the page; check commit history and branch selector on GitHub
+4.  **Clean Up:**
+    ```bash
+    eb terminate credit-risk-env
+    ```
