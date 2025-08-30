@@ -23,8 +23,8 @@ WORKDIR /home/appuser/app
 # Copy installed packages from the builder stage
 COPY --from=builder /root/.local /home/appuser/.local
 
-# Copy the application code and the serialized model
-COPY ["predict.py", "model.joblib", "./"]
+# Copy the application code, the OpenAPI spec, and the serialized model
+COPY ["predict.py", "openapi.json", "model.joblib", "./"]
 
 # Expose the port the app runs on
 EXPOSE 9696

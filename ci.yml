@@ -99,18 +99,32 @@ jobs:
       contents: read
       id-token: write
 
+    strategy:
+      matrix:
+        include:
+          - env: dev
+            service: credit-risk-service-dev
+            threshold: 0.3
+          - env: staging
+            service: credit-risk-service-staging
+            threshold: 0.5
+          - env: prod
+            service: credit-risk-service
+            threshold: 0.5
+
     steps:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
-      - name: Deploy to Cloud Run
+      - name: Deploy to Cloud Run (${{ matrix.env }})
         uses: google-github-actions/deploy-cloudrun@v2
         with:
-          service: 'credit-risk-service'
+          service: '${{ matrix.service }}'
           region: 'us-central1'
           image: ghcr.io/${{ github.repository }}:${{ github.sha }}
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           env_vars: |
-            PREDICTION_THRESHOLD=0.5
+            PREDICTION_THRESHOLD=${{ matrix.threshold }}
+            GIT_SHA=${{ github.sha }}
