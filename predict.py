@@ -5,6 +5,7 @@ import os
 import hashlib
 import uuid
 from pydantic import BaseModel, ValidationError
+from enum import Enum
 
 # Name of the model file
 model_file = "model.joblib"
@@ -32,15 +33,46 @@ app = Flask("credit-risk")
 app.title = "Credit Risk Prediction API"
 
 
+# Define Enums for categorical features
+class HomeEnum(str, Enum):
+    rent = 'rent'
+    owner = 'owner'
+    private = 'private'
+    ignore = 'ignore'
+    parents = 'parents'
+    other = 'other'
+    unk = 'unk'
+
+class MaritalStatusEnum(str, Enum):
+    single = 'single'
+    married = 'married'
+    widow = 'widow'
+    separated = 'separated'
+    divorced = 'divorced'
+    unk = 'unk'
+
+class RecordsStatusEnum(str, Enum):
+    no = 'no'
+    yes = 'yes'
+    unk = 'unk'
+
+class JobStatusEnum(str, Enum):
+    fixed = 'fixed'
+    parttime = 'parttime'
+    freelance = 'freelance'
+    others = 'others'
+    unk = 'unk'
+
+
 # Define the data model for input validation using Pydantic
 class LoanApplication(BaseModel):
     seniority: int
-    home: str
+    home: HomeEnum
     time: int
     age: int
-    marital: str
-    records: str
-    job: str
+    marital: MaritalStatusEnum
+    records: RecordsStatusEnum
+    job: JobStatusEnum
     expenses: int
     income: float
     assets: float
@@ -136,6 +168,7 @@ def predict():
         return resp
 
     # Convert the Pydantic model to a dictionary for the vectorizer
+    # .model_dump() will convert Enums to their string values
     application_dict = application.model_dump()
 
     logging.info(f"[{request_id}] Received prediction request: {application_dict}")
