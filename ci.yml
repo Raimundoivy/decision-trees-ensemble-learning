@@ -1,18 +1,13 @@
 name: CI/CD
 
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "master" branch
   push:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This job runs tests on every push and pull request
   test:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -21,7 +16,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x' # Use a flexible Python version
+          python-version: '3.13'
 
       - name: Install pipenv
         run: pip install pipenv
@@ -35,16 +30,13 @@ jobs:
       - name: Run Flake8 linter check
         run: pipenv run flake8 .
 
-      - name: Run tests
-        run: pipenv run pytest
+      - name: Run tests (unit only)
+        run: pipenv run pytest -m "not integration" -q
 
-  # This job builds and pushes the Docker image to the GitHub Container Registry
   build-and-push:
-    # This job only runs if the 'test' job succeeds and the event is a push to the master branch
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     needs: test
     runs-on: ubuntu-latest
-    # Grant permissions for the GITHUB_TOKEN to push to the registry
     permissions:
       contents: read
       packages: write
@@ -59,10 +51,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Generate requirements.txt for Docker build
         run: |
           pip install pipenv
-          pipenv lock -r > requirements.txt
+          pipenv requirements > requirements.txt
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -73,14 +66,38 @@ jobs:
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
 
-  # This job deploys the container to Google Cloud Run
+  integration:
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run container
+        run: |
+          docker run -d --rm -p 9696:9696 --name credit ghcr.io/${{ github.repository }}:${{ github.sha }}
+          for i in {1..50}; do
+            if curl -fsS http://localhost:9696/ping >/dev/null; then break; fi
+            sleep 0.2
+          done
+
+      - name: Run predict-test.py against the container
+        run: |
+          python -m pip install --upgrade pip requests
+          PREDICTION_URL=http://localhost:9696/predict python predict-test.py
+
+      - name: Stop container
+        if: always()
+        run: docker stop credit
+
   deploy:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-    needs: [test, build-and-push]
+    needs: [test, build-and-push, integration]
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # Required for authentication
+      id-token: write
 
     steps:
       - name: Authenticate to Google Cloud
@@ -91,8 +108,8 @@ jobs:
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
-          service: 'credit-risk-service' # Name your service
-          region: 'us-central1' # Choose a region
+          service: 'credit-risk-service'
+          region: 'us-central1'
           image: ghcr.io/${{ github.repository }}:${{ github.sha }}
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           env_vars: |

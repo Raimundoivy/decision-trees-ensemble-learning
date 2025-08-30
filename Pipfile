@@ -1,20 +1,17 @@
-[[source]]
-url = "https://pypi.org/simple"
-verify_ssl = true
-name = "pypi"
-
 [packages]
-flask = "*"
-gunicorn = "*"
-scikit-learn = "*"
-pydantic = "*"
-pandas = "*"
-numpy = "*"
-xgboost = "*"
+flask = "~=3.1"
+gunicorn = "~=23.0"
+scikit-learn = "~=1.7"
+pydantic = "~=2.11"
+pandas = "~=2.3"
+numpy = "~=2.3"
+xgboost = "~=3.0"
 
 [dev-packages]
-pytest = "*"
-requests = "*"
+pytest = "~=8.4"
+requests = "~=2.32"
+black = "~=25.1"
+flake8 = "~=7.3"
 
 [requires]
 python_version = "3.13"

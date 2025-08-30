@@ -2,7 +2,7 @@ import os
 import requests
 
 # Get the URL from the environment variable or use a default
-url = os.getenv('PREDICTION_URL', 'http://localhost:9696/predict')
+url = os.getenv("PREDICTION_URL", "http://localhost:9696/predict")
 
 # A sample loan application
 applicant = {
@@ -18,7 +18,7 @@ applicant = {
     "assets": 0.0,
     "debt": 0.0,
     "amount": 800,
-    "price": 846
+    "price": 846,
 }
 
 try:

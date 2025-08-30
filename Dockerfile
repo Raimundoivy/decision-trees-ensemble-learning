@@ -1,22 +1,21 @@
 # Stage 1: Builder
-# This stage installs dependencies and is discarded later.
-FROM python:3.12-slim as builder
+FROM python:3.13-slim AS builder
 
-# Set the working directory in the container
 WORKDIR /app
 
-# Copy the requirements file
+# Copy the requirements file (generated in CI)
 COPY requirements.txt .
 
 # Install dependencies into a temporary location
 RUN pip install --no-cache-dir --user -r requirements.txt
 
 # Stage 2: Final Image
-# This is the lean, final image that will run in production.
-FROM python:3.12-slim
+FROM python:3.13-slim AS final
 
-# Create a non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+# Create a non-root user and group (Debian syntax)
+RUN addgroup --system appgroup \
+    && adduser --system --ingroup appgroup --home /home/appuser --disabled-password appuser
+
 USER appuser
 
 WORKDIR /home/appuser/app
@@ -33,8 +32,8 @@ EXPOSE 9696
 # Make Python aware of the installed packages
 ENV PATH=/home/appuser/.local/bin:$PATH
 
-# Healthcheck to ensure the application is running
-HEALTHCHECK CMD curl --fail http://localhost:9696/ || exit 1
+# Healthcheck using Python stdlib (no curl needed)
+HEALTHCHECK CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:9696/ping')" || exit 1
 
-# Define the command to run the application using Gunicorn for production
+# Run with Gunicorn
 CMD ["gunicorn", "--bind=0.0.0.0:9696", "predict:app"]

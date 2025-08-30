@@ -40,6 +40,16 @@ class LoanApplication(BaseModel):
     price: int
 
 
+@app.route("/version", methods=["GET"])
+def version():
+    return jsonify({
+        "service": "credit-risk",
+        "git_sha": os.getenv("GIT_SHA", "dev"),
+        "model_file": model_file,
+        "threshold": THRESHOLD,
+    })
+
+
 @app.route("/", methods=["GET"])
 def index():
     """Root endpoint with a welcome message."""
