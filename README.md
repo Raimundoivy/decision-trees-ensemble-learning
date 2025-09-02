@@ -117,36 +117,3 @@ The project uses GitHub Actions for its CI/CD pipeline, defined in `.github/work
 4.  **`deploy`**: Deploys the container to Google Cloud Run environments (dev, staging, prod) after all previous jobs succeed.
 
 Additionally, the `.github/workflows/retrain.yml` workflow automatically retrains the model every Monday at 03:00 UTC.
-
-## Deployment (AWS Elastic Beanstalk)
-
-This guide provides instructions for a simple deployment of the Credit Risk Prediction API to AWS Elastic Beanstalk.
-
-### Prerequisites
-
-- AWS Account & AWS CLI
-- Elastic Beanstalk CLI (EB CLI)
-
-### Deployment Steps
-
-1.  **Initialize the Elastic Beanstalk Application:**
-    ```bash
-    eb init -p "Docker" --region us-east-1 credit-risk-app
-    ```
-
-2.  **Create the Environment:**
-    ```bash
-    eb create credit-risk-env
-    ```
-
-3.  **Verify and Test:**
-    ```bash
-    eb open
-    export PREDICTION_URL=$(eb status --verbose | grep CNAME | awk \'{print $2}\')
-    python predict-test.py
-    ```
-
-4.  **Clean Up:**
-    ```bash
-    eb terminate credit-risk-env
-    ```
