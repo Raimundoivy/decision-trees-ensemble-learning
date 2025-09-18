@@ -1,33 +1,32 @@
 {
   "best_model": "XGBoostClassifier",
-  "best_validation_auc": 0.842992223400495,
-  "timestamp": "2025-09-18T00:28:49.468915+00:00",
+  "best_validation_auc": 0.8344085071285496,
+  "timestamp": "2025-09-18T01:12:25.203454+00:00",
   "experiments": {
     "LogisticRegression": {
       "best_params": {
-        "C": 1.0,
-        "penalty": "l1"
+        "C": 0.1,
+        "penalty": "l2"
       },
-      "best_cv_auc": 0.8315029853631677,
-      "validation_auc": 0.8279368445858372
+      "best_cv_auc": 0.8284078535446315,
+      "validation_auc": 0.8213090609166962
     },
     "RandomForestClassifier": {
       "best_params": {
-        "max_depth": 15,
-        "min_samples_leaf": 5,
+        "max_depth": 10,
         "n_estimators": 200
       },
-      "best_cv_auc": 0.8333661576518718,
-      "validation_auc": 0.8310710498409332
+      "best_cv_auc": 0.8214023160223768,
+      "validation_auc": 0.824402026628962
     },
     "XGBoostClassifier": {
       "best_params": {
         "learning_rate": 0.1,
         "max_depth": 3,
-        "n_estimators": 100
+        "n_estimators": 50
       },
-      "best_cv_auc": 0.8428338631986048,
-      "validation_auc": 0.842992223400495
+      "best_cv_auc": 0.833491214965379,
+      "validation_auc": 0.8344085071285496
     }
   }
 }

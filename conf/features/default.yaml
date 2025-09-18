@@ -1,0 +1,18 @@
+numerical_features:
+  - "seniority"
+  - "time"
+  - "age"
+  - "expenses"
+  - "income"
+  - "assets"
+  - "debt"
+  - "amount"
+  - "price"
+categorical_features:
+  - "home"
+  - "marital"
+  - "records"
+  - "job"
+feature_selection:
+  n_estimators: 100
+  threshold: 0.01

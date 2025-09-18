@@ -3,7 +3,6 @@ import numpy as np
 import joblib
 import json
 import os
-import yaml
 import importlib
 from datetime import datetime, UTC
 from pathlib import Path
@@ -16,6 +15,12 @@ from sklearn.feature_extraction import DictVectorizer
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import roc_auc_score
+from sklearn.preprocessing import StandardScaler
+
+# --- Hydra and OmegaConf ---
+import hydra
+from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 # --- Helper function to dynamically load classes from config ---
 def get_class(class_path):
@@ -55,14 +60,10 @@ def feature_engineering(df):
     return df_engineered
 
 
-def main():
-    # --- SDS Recommendation: Load all parameters from config.yaml ---
-    print("--- Loading configuration from config.yaml ---")
-    with open("config.yaml", "r") as f:
-        config = yaml.safe_load(f)
-
+@hydra.main(config_path="../../conf", config_name="config", version_base=None)
+def main(cfg: DictConfig):
     # Data loading and initial cleaning
-    df = pd.read_csv(config["data_paths"]["raw_data"])
+    df = pd.read_csv(cfg.data.raw_data)
     df.columns = df.columns.str.lower()
     
     # [Data cleaning logic remains the same...]
@@ -75,7 +76,7 @@ def main():
     df = df[df.status != 'unk']
     
     # Data splitting
-    df_train, df_val = train_test_split(df, test_size=config["training"]["validation_split_size"], random_state=config["training"]["random_state"])
+    df_train, df_val = train_test_split(df, test_size=cfg.training.validation_split_size, random_state=cfg.training.random_state)
     y_train = (df_train.status == 'default').astype(int); y_val = (df_val.status == 'default').astype(int)
     df_train = df_train.fillna(0); df_val = df_val.fillna(0)
     del df_train["status"]; del df_val["status"]
@@ -88,27 +89,45 @@ def main():
     # Feature Selection Step
     print("\n--- Running Feature Selection ---")
     selection_model_class = get_class("sklearn.ensemble.RandomForestClassifier")
-    selection_model = selection_model_class(n_estimators=config["features"]["feature_selection"]["n_estimators"], random_state=config["training"]["random_state"], n_jobs=-1)
-    selector = SelectFromModel(selection_model, threshold=config["features"]["feature_selection"]["threshold"], prefit=False)
+    selection_model = selection_model_class(n_estimators=cfg.features.feature_selection.n_estimators, random_state=cfg.training.random_state, n_jobs=-1)
+    selector = SelectFromModel(selection_model, threshold=cfg.features.feature_selection.threshold, prefit=False)
     selector.fit(X_train, y_train)
     X_train_selected = selector.transform(X_train); X_val_selected = selector.transform(X_val)
     print(f"Selected {X_train_selected.shape[1]} features out of {X_train.shape[1]}")
 
-    # Model Experimentation Loop
-    all_metrics = {}; best_model_overall = None; best_auc_score = -1; best_model_name = ""
 
-    for model_name, model_info in config["training"]["models_to_run"].items():
+    X_train_selected = selector.transform(X_train)
+    X_val_selected = selector.transform(X_val)
+    print(f"Selected {X_train_selected.shape[1]} features out of {X_train.shape[1]}")
+
+    
+    print("\n--- Scaling Features ---")
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train_selected)
+    X_val_scaled = scaler.transform(X_val_selected)
+
+    # Model Experimentation Loop
+    all_metrics = {}
+    best_model_overall = None
+    best_auc_score = -1
+    best_model_name = ""
+
+    for model_name, model_info in cfg.training.models_to_run.items():
         print(f"\n--- Training {model_name} ---")
-        EstimatorClass = get_class(model_info["estimator_class"])
-        estimator = EstimatorClass(**model_info["static_params"])
-        
-        grid_search = GridSearchCV(estimator=estimator, param_grid=model_info["param_grid"], cv=config["training"]["cv_folds"], n_jobs=-1, verbose=1, scoring='roc_auc')
-        grid_search.fit(X_train_selected, y_train)
+        # Convert OmegaConf objects to native Python types
+        static_params = OmegaConf.to_container(model_info.static_params, resolve=True)
+        param_grid = OmegaConf.to_container(model_info.param_grid, resolve=True)
+
+        EstimatorClass = get_class(model_info.estimator_class)
+        estimator = EstimatorClass(**static_params)
+
+        grid_search = GridSearchCV(estimator=estimator, param_grid=param_grid, cv=cfg.training.cv_folds, n_jobs=-1, verbose=1, scoring='roc_auc')
+        grid_search.fit(X_train_scaled, y_train)
 
         model = grid_search.best_estimator_
-        y_pred_val = model.predict_proba(X_val_selected)[:, 1]
+        y_pred_val = model.predict_proba(X_val_scaled)[:, 1]
         auc_val = roc_auc_score(y_val, y_pred_val)
-
+        
         print(f"Best CV AUC for {model_name}: {grid_search.best_score_:.4f}"); print(f"Validation AUC for {model_name}: {auc_val:.4f}")
 
         all_metrics[model_name] = {"best_params": grid_search.best_params_, "best_cv_auc": grid_search.best_score_, "validation_auc": auc_val}
@@ -118,42 +137,50 @@ def main():
     # Create and Save Final Artifact
     print(f"\n--- Best Model: {best_model_name} (Validation AUC: {best_auc_score:.4f}) ---")
     explainer = None
-    if 'Logistic' in best_model_name: explainer = shap.LinearExplainer(best_model_overall, X_train_selected)
-    else: explainer = shap.TreeExplainer(best_model_overall)
+    if 'Logistic' in best_model_name:
+        explainer = shap.LinearExplainer(best_model_overall, X_train_scaled)
+    else:
+        explainer = shap.TreeExplainer(best_model_overall)
 
-    final_artifact = {"vectorizer": dv, "feature_selector": selector, "model": best_model_overall, "explainer": explainer}
+    final_artifact = {
+        "vectorizer": dv,
+        "feature_selector": selector,
+        "scaler": scaler,  # <--- ADD THIS
+        "model": best_model_overall,
+        "explainer": explainer
+    }
 
     # --- Create output directory and save artifacts ---
-    output_dir = Path(config["data_paths"]["model_output_dir"])
+    output_dir = Path(cfg.data.model_output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     timestamp = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
     versioned_filename = f"model-{timestamp}-{best_model_name}-{best_auc_score:.2f}.joblib"
     versioned_filepath = output_dir / versioned_filename
-    latest_filepath = output_dir / config["data_paths"]["latest_model_name"]
+    latest_filepath = output_dir / cfg.data.latest_model_name
 
     joblib.dump(final_artifact, versioned_filepath); joblib.dump(final_artifact, latest_filepath)
     print(f"Versioned artifact saved to: {versioned_filepath}"); print(f"Latest artifact saved to: {latest_filepath}")
 
     # Save Metrics and Data Profile
     final_metrics_log = {"best_model": best_model_name, "best_validation_auc": best_auc_score, "timestamp": datetime.now(UTC).isoformat(), "experiments": all_metrics}
-    with open(config["data_paths"]["metrics_output"], "w") as f: json.dump(final_metrics_log, f, indent=2)
-    print(f"Metrics saved to {config['data_paths']['metrics_output']}")
+    with open(cfg.data.metrics_output, "w") as f: json.dump(final_metrics_log, f, indent=2)
+    print(f"Metrics saved to {cfg.data.metrics_output}")
     
     # --- Create a comprehensive data profile for monitoring ---
     # This profile includes stats, value counts, and a data sample for drift detection.
     profile = {
-        'numerical_stats': df_train[config["features"]["numerical_features"]].describe().to_dict(),
+        'numerical_stats': df_train[cfg.features.numerical_features].describe().to_dict(),
         'categorical_counts': {
             col: df_train[col].value_counts().to_dict() 
-            for col in config["features"]["categorical_features"]
+            for col in cfg.features.categorical_features
         },
-        'sample_numerical': df_train[config["features"]["numerical_features"]]
-                            .sample(500, random_state=config["training"]["random_state"])
+        'sample_numerical': df_train[cfg.features.numerical_features]
+                            .sample(500, random_state=cfg.training.random_state)
                             .to_dict('list')
     }
-    with open(config["data_paths"]["training_profile"], 'w') as f: json.dump(profile, f, indent=2)
-    print(f"Training data profile saved to {config['data_paths']['training_profile']}")
+    with open(cfg.data.training_profile, 'w') as f: json.dump(profile, f, indent=2)
+    print(f"Training data profile saved to {cfg.data.training_profile}")
 
 if __name__ == "__main__":
     main()

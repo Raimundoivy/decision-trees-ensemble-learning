@@ -1,0 +1,5 @@
+raw_data: "data/CreditScoring.csv"
+model_output_dir: "artifacts/"
+latest_model_name: "model.joblib"
+metrics_output: "artifacts/training_metrics.json"
+training_profile: "artifacts/training_data_profile.json"

@@ -1,0 +1,29 @@
+validation_split_size: 0.2
+random_state: 42
+cv_folds: 5
+models_to_run:
+  LogisticRegression:
+    estimator_class: "sklearn.linear_model.LogisticRegression"
+    static_params:
+      solver: "liblinear"
+      random_state: ${training.random_state}
+    param_grid:
+      C: [0.1, 1.0, 10.0]
+      penalty: ["l1", "l2"]
+  RandomForestClassifier:
+    estimator_class: "sklearn.ensemble.RandomForestClassifier"
+    static_params:
+      random_state: ${training.random_state}
+    param_grid:
+      n_estimators: [100, 200]
+      max_depth: [5, 10, 20]
+  XGBoostClassifier:
+    estimator_class: "xgboost.XGBClassifier"
+    static_params:
+      eval_metric: "logloss"
+      use_label_encoder: False
+      random_state: ${training.random_state}
+    param_grid:
+      n_estimators: [50, 100, 200]
+      max_depth: [3, 5, 7]
+      learning_rate: [0.01, 0.1, 0.3]

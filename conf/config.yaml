@@ -1,0 +1,11 @@
+defaults:
+  - _self_
+  - data: default
+  - features: default
+  - training: default
+  - override hydra/job_logging: disabled
+
+hydra:
+  output_subdir: null
+  run:
+    dir: .
