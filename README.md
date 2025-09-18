@@ -42,46 +42,59 @@ The API provides endpoints for health checks, versioning, and predictions.
 ## Getting Started
 
 ### Prerequisites
-
-- Python 3.13
-- `pipenv`
+- Python 3.12
 - Docker
 
-### Installation
+### Option 1: Run with Docker (Recommended)
+
+This is the simplest way to run the application, as Docker handles all dependencies. After cloning the repository, you can build and run the container.
+
+```bash
+# 1. Build the Docker image
+docker build -t credit-risk-api .
+
+# 2. Run the container
+docker run -p 9696:9696 credit-risk-api
+```
+
+The API will be available at `http://localhost:9696`.
+
+### Option 2: Local Development Setup
 
 1.  **Clone the repository:**
     ```bash
     git clone https://github.com/Raimundoivy/decision-trees-ensemble-learning.git
     cd decision-trees-ensemble-learning
     ```
-
-2.  **Install dependencies:**
+2.  **Create a virtual environment and install dependencies:**
     ```bash
-    pipenv install --dev
+    python -m venv venv
+    source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+    pip install -r requirements-dev.txt
+    ```
+3.  **Set up pre-commit hooks (optional but recommended):** This will automatically format and lint your code before you commit.
+    ```bash
+    pre-commit install
     ```
 
-3.  **Set up pre-commit hooks (optional but recommended):**
-    ```bash
-    pipenv run pre-commit install
-    ```
+## Local Usage
 
-## Usage
+After setting up your local environment, you can run the individual components.
 
 ### 1. Train the Model
 
-Run the training script. This will generate the `model.joblib` file.
-*Note: This requires the `CreditScoring.csv` dataset in the root directory.*
+Run the training script. This will generate the `artifacts/model.joblib` file. *Note: This requires the `CreditScoring.csv` dataset in the `data/` directory.*
 
 ```bash
-pipenv run python train.py
+python -m src.credit_risk.train
 ```
 
 ### 2. Run the API Locally
 
-Start the Flask application:
+Start the Flask application using Gunicorn (as in production):
 
 ```bash
-pipenv run python predict.py
+gunicorn --bind=0.0.0.0:9696 src.credit_risk.predict:app
 ```
 
 The API will be available at `http://localhost:9696`.
@@ -101,10 +114,10 @@ Run the test suite using `pytest`. The tests are separated into unit and integra
 
 ```bash
 # Run all tests
-pipenv run pytest
+pytest
 
 # Run only unit tests
-pipenv run pytest -m "not integration"
+pytest -m "not integration"
 ```
 
 ## CI/CD Pipeline

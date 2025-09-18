@@ -1,0 +1,155 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Credit Risk Prediction API",
+    "version": "1.0.0",
+    "description": "API for predicting credit default probability."
+  },
+  "servers": [
+    { "url": "http://localhost:9696" }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Root",
+        "description": "Welcome message.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "message": { "type": "string" } },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ping": {
+      "get": {
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "status": { "type": "string", "example": "ok" } },
+                  "required": ["status"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/version": {
+      "get": {
+        "summary": "Service metadata",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "service": { "type": "string" },
+                    "git_sha": { "type": "string" },
+                    "model_file": { "type": "string" },
+                    "threshold": { "type": "number" },
+                    "model_hash": { "type": "string" }
+                  },
+                  "required": ["service", "model_file", "threshold"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/predict": {
+      "post": {
+        "summary": "Predict default probability",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoanApplication" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Prediction result",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Correlation ID for the request",
+                "schema": { "type": "string" }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "default_probability": { "type": "number" },
+                    "default": { "type": "boolean" },
+                    "request_id": { "type": "string" }
+                  },
+                  "required": ["default_probability", "default"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": { "type": "string" },
+                    "details": { "type": "array", "items": { "type": "object" } }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "LoanApplication": {
+        "type": "object",
+        "properties": {
+          "seniority": { "type": "integer" },
+          "home": { "type": "string" },
+          "time": { "type": "integer" },
+          "age": { "type": "integer" },
+          "marital": { "type": "string" },
+          "records": { "type": "string" },
+          "job": { "type": "string" },
+          "expenses": { "type": "integer" },
+          "income": { "type": "number" },
+          "assets": { "type": "number" },
+          "debt": { "type": "number" },
+          "amount": { "type": "integer" },
+          "price": { "type": "integer" }
+        },
+        "required": [
+          "seniority", "home", "time", "age", "marital", "records", "job",
+          "expenses", "income", "assets", "debt", "amount", "price"
+        ]
+      }
+    }
+  }
+}

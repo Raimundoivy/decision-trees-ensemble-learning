@@ -16,22 +16,19 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
-
-      - name: Install pipenv
-        run: pip install pipenv
+          python-version: '3.12'
 
       - name: Install dependencies
-        run: pipenv install --dev
+        run: pip install -r requirements-dev.txt
 
       - name: Run Black formatter check
-        run: pipenv run black --check .
+        run: black --check .
 
       - name: Run Flake8 linter check
-        run: pipenv run flake8 .
+        run: flake8 .
 
       - name: Run tests (unit only)
-        run: pipenv run pytest -m "not integration" -q
+        run: pytest -m "not integration" -q
 
   build-and-push:
     if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && github.event_name == 'push'
@@ -51,11 +48,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Generate requirements.txt for Docker build
-        run: |
-          pip install pipenv
-          pipenv requirements > requirements.txt
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -85,7 +77,7 @@ jobs:
       - name: Run predict-test.py against the container
         run: |
           python -m pip install --upgrade pip requests
-          PREDICTION_URL=http://localhost:9696/predict python predict-test.py
+          PREDICTION_URL=http://localhost:9696/predict python scripts/predict-test.py
 
       - name: Stop container
         if: always()

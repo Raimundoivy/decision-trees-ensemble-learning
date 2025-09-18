@@ -1,0 +1,16 @@
+# Production Dependencies
+flask==3.0.3
+gunicorn==22.0.0
+numpy==1.26.4
+pandas==2.2.2
+pydantic==2.7.1
+scikit-learn==1.4.2
+xgboost==2.0.3
+shap==0.45.0
+
+# Development & Testing Dependencies
+pytest==8.4.1
+requests==2.31.0
+black==24.4.2
+flake8==7.0.0
+pydantic-settings==2.3.4

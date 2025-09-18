@@ -124,18 +124,11 @@ dmypy.json
 # IDE settings
 .idea/
 
-# Notebooks
-decision_trees_ensemble_learning.ipynb
-
 # Model files
+# Ignoring all model files except the one we need for the Docker build.
 model.bin
-model.joblib
-
-# Data files
-CreditScoring.csv
 
 # Generated files
-requirements.txt
 
 # SSH keys (avoid committing secrets)
 id_*
